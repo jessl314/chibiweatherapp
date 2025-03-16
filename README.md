@@ -24,3 +24,5 @@ then tech stack:
 
 frontend: React, Vite, possible something else lol
 backend: Tauri, OpenWeatherMap API
+
+do npm run dev in one terminal and npm run tauri dev in anotherboth cd to frontend
