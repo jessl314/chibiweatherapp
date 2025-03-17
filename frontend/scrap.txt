@@ -1,0 +1,151 @@
+import React, { useState, useEffect } from 'react';
+
+const WeatherSearch = () => {
+  const [query, setQuery] = useState('');
+  const [suggestions, setSuggestions] = useState([]);
+  const [selectedCity, setSelectedCity] = useState(null);
+
+  // Replace with your OpenWeatherMap API key
+  const apiKey = 'YOUR_API_KEY';
+  
+  const fetchCities = async (query) => {
+    if (!query) {
+      setSuggestions([]);
+      return;
+    }
+
+    const response = await fetch(`https://api.openweathermap.org/data/2.5/find?q=${query}&appid=${apiKey}`);
+    const data = await response.json();
+
+    setSuggestions(data.list || []);
+  };
+
+  // Handle user input
+  const handleChange = (e) => {
+    setQuery(e.target.value);
+  };
+
+  // Fetch suggestions when query changes
+  useEffect(() => {
+    fetchCities(query);
+  }, [query]);
+
+  // Handle city selection
+  const handleSelectCity = (city) => {
+    setSelectedCity(city);
+    setQuery(`${city.name}, ${city.sys.country}`);
+    setSuggestions([]);
+    console.log('Selected city:', city);
+  };
+
+  return (
+    <div>
+      <input
+        type="text"
+        value={query}
+        onChange={handleChange}
+        placeholder="Enter city, state, or country"
+      />
+      {suggestions.length > 0 && (
+        <ul>
+          {suggestions.map((city) => (
+            <li key={city.id} onClick={() => handleSelectCity(city)}>
+              {city.name}, {city.sys.country}
+            </li>
+          ))}
+        </ul>
+      )}
+      {selectedCity && (
+        <div>
+          <h3>Selected City: {selectedCity.name}, {selectedCity.sys.country}</h3>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WeatherSearch;
+
+
+
+const fetchWeather = async (lat, lon) => {
+  const apiKey = 'YOUR_API_KEY';
+  const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+
+  try {
+    const response = await fetch(weatherUrl);
+    const weatherData = await response.json();
+
+    if (weatherData.cod !== 200) {
+      console.error('Error fetching weather data:', weatherData.message);
+      return;
+    }
+
+    // Use the weather data here
+    console.log('Weather Data:', weatherData);
+
+    // For example, you can display the weather info:
+    const temperature = weatherData.main.temp;
+    const condition = weatherData.weather[0].description;
+    console.log(`Temperature: ${temperature}°C, Condition: ${condition}`);
+    
+    // Update your UI with weather information as needed
+  } catch (error) {
+    console.error('Error fetching weather data:', error);
+  }
+};
+
+import React, { useState, useEffect } from 'react';
+
+const WeatherApp = () => {
+  const [weather, setWeather] = useState(null);
+  const [city, setCity] = useState('');
+
+  const apiKey = 'YOUR_API_KEY';
+
+  const fetchWeather = async (lat, lon) => {
+    const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
+    
+    try {
+      const response = await fetch(weatherUrl);
+      const weatherData = await response.json();
+      
+      setWeather(weatherData);
+    } catch (error) {
+      console.error('Error fetching weather data:', error);
+    }
+  };
+
+  const handleLocationSelect = (cityData) => {
+    const { lat, lon } = cityData.coord;
+    fetchWeather(lat, lon); // Fetch weather using lat and lon
+    setCity(`${cityData.name}, ${cityData.sys.country}`);
+  };
+
+  return (
+    <div>
+      <h1>Weather App</h1>
+      
+      <input 
+        type="text" 
+        placeholder="Enter city"
+        onChange={(e) => setCity(e.target.value)} 
+        value={city}
+      />
+      <button onClick={() => handleLocationSelect({ coord: { lat: 34.0522, lon: -118.2437 }, name: 'Los Angeles', sys: { country: 'US' } })}>
+        Get Weather for {city}
+      </button>
+      
+      {weather && (
+        <div>
+          <h2>{weather.name}, {weather.sys.country}</h2>
+          <p>Temperature: {weather.main.temp}°C</p>
+          <p>Condition: {weather.weather[0].description}</p>
+          <p>Humidity: {weather.main.humidity}%</p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default WeatherApp;
