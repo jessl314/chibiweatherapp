@@ -26,3 +26,6 @@ frontend: React, Vite, possible something else lol
 backend: Tauri, OpenWeatherMap API
 
 do npm run dev in one terminal and npm run tauri dev in anotherboth cd to frontend
+
+>netstat -ano | findstr :5174
+taskkill /PID 60480 /F
