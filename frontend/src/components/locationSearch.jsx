@@ -33,12 +33,15 @@ const LocationSearch = () => {
         }
         const data = await response.json();
         console.log("API Response:", data);
-        // const uniqueCities = data.list.filter((value, index, self) =>
-        //     index === self.findIndex((t) => (
-        //         t.id === value.id && t.name === value.name && t.sys.country === value.sys.country
-        //     ))
-        // );
-        setSuggestions(data.list || [])
+
+        if (!Array.isArray(data) || data.length === 0) {
+            console.error("No valid city data received");
+            setSuggestions([]);
+            return;
+        }
+    
+        // Store city suggestions
+        setSuggestions(data);
     };
 
     useEffect(() => {
@@ -48,8 +51,8 @@ const LocationSearch = () => {
     const handleSelectCity = (city) => {
         setSelectCity(city);
         setCity(city.name);
-        setState(city.sys.state || '');
-        setCountry(city.sys.country);
+        setState(city.state || '');
+        setCountry(city.country);
         setSuggestions([]);
         console.log('Selected city: ', city);
     };
@@ -77,9 +80,9 @@ const LocationSearch = () => {
             />
             {suggestions.length > 0 && (
                 <ul>
-                    {suggestions.map((city) => (
-                        <li key={`${city.id}-${city.name}-${city.sys.country}`} onClick={() => handleSelectCity(city)}>
-                            {city.name}, {city.sys.state ? city.sys.state :  ''} {city.sys.country}
+                    {suggestions.map((city, index) => (
+                        <li key={`${city.name}-${city.state || "unknown"}${city.country}-${index}`} onClick={() => handleSelectCity(city)}>
+                            {city.name}, {city.state ? city.state :  ''},  {city.country}
                         </li>
                     ))}
                 </ul>
@@ -88,7 +91,7 @@ const LocationSearch = () => {
             
             {selectCity && (
                 <div>
-                    <h3>Selected City: {selectCity.sys.state || ''}, {selectCity.sys.country}</h3>
+                    <h3>Selected City: {selectCity.name}, {selectCity.state || ''}, {selectCity.country}</h3>
                 </div>
             )}
         </div>
