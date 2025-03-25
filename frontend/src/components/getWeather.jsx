@@ -6,6 +6,7 @@ const LocationWeather = () => {
     const [country, setCountry] = useState('')
     const [suggestions, setSuggestions] = useState([])
     const [selectCity, setSelectCity] = useState(null)
+    const [weather, setWeather] = useState(null);
 
     const apiKey = import.meta.env.VITE_WEATHER_API_KEY;
     
@@ -29,7 +30,7 @@ const LocationWeather = () => {
         const response = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apiKey}`)
         //
         if (!response.ok) {
-            console.error('Error fetching data:', response.status, response.statusText);
+            console.error('Error fetching location data:', response.status, response.statusText);
             return;
         }
         const data = await response.json();
@@ -45,6 +46,18 @@ const LocationWeather = () => {
         setSuggestions(data);
     };
 
+    const fetchWeather = async (lat,lon) => {
+        const response2 = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+        if (!response2.ok) {
+            console.error('Error fetching data:', response2.status, response2.statusText);
+            return;
+        }
+        const data2 = await response2.json();
+        setWeather(data2);
+    }
+
+
+
     useEffect(() => {
         fetchCities();
     }, [city, state, country]);
@@ -52,12 +65,13 @@ const LocationWeather = () => {
     console.log(suggestions);
 
     // handles information setting when user selects a city
-    const handleSelectCity = (city) => {
+    const handleSelectCity = async (city) => {
         setSelectCity(city);
         setCity(city.name);
         setState(city.state || '');
         setCountry(city.country);
         setSuggestions([]);
+        await fetchWeather(city.lat, city.lon);
         
     };
     console.log("Rendering LocationSearch component");
@@ -98,6 +112,15 @@ const LocationWeather = () => {
             {selectCity && (
                 <div>
                     <h3>Selected City: {selectCity.name}, {selectCity.state || ''}, {selectCity.country}</h3>
+                </div>
+            )}
+            {weather && (
+                <div>
+                    <h3>Weather Information:</h3>
+                    <p>Temperature: {Math.round(((weather.main.temp - 273.15) * (9/5) + 32) * 100) / 100}°F</p>
+                    <p>Weather: {weather.weather[0].description}</p>
+                    <p>Humidity: {weather.main.humidity}%</p>
+                    <p>Wind Speed: {weather.wind.speed} m/s</p>
                 </div>
             )}
         </div>
