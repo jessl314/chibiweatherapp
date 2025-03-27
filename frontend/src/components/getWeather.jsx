@@ -1,5 +1,14 @@
 import React, {useState, useEffect} from 'react';
 
+/* 
+TODO:
+- make the search bar only include the city input I think
+- move the search bar to a location and adjust the css such that when suggestions pop up, things don't shift
+- somehow move the weather informtion into another component since I want the initial page to just be search 
+
+
+*/
+
 const LocationWeather = () => {
     const [city, setCity] = useState('')
     const [state, setState] = useState('')
@@ -12,8 +21,12 @@ const LocationWeather = () => {
     
     // function to fetch the suggested cities when the user types in the input fields
     const fetchCities = async () => {
-        if (!city) {
+        
+        // checks for if no city is entered or user types a response that is unlikely to lead to a valid city
+        // if so then there should be "no suggestions found" and no city selected
+        if (!city || city.length < 3 || !/^[a-zA-Z\s]+$/.test(city)) {
             setSuggestions([]);
+            setSelectCity(null);  
             return;
         }
         let query = city;
@@ -28,39 +41,55 @@ const LocationWeather = () => {
             return; // Stop execution if query is invalid
         }
         const response = await fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${query}&limit=5&appid=${apiKey}`)
-        //
+        
         if (!response.ok) {
             console.error('Error fetching location data:', response.status, response.statusText);
             return;
         }
+
         const data = await response.json();
         console.log("API Response:", data);
+        // filtering out any suggestions that are returned that are not real cities 
+        // ex: xxx leads to some random websites, this filter arrow function takes those out.
+        const validCities = data.filter(city => {
+            const isNotRandom = !/^([a-zA-Z])\1{2,}$/.test(city.name); // Exclude repeated characters like "xxx"
+            const isValidCity = city.name.length > 2 && city.state !== undefined && city.country !== undefined && isNotRandom;
+            return isValidCity;
+        });
 
-        if (!Array.isArray(data) || data.length === 0) {
-            console.error("No valid city data received");
+        if (validCities.length === 0) {
             setSuggestions([]);
-            return;
+            setSelectCity("")
+        } else {
+            setSuggestions(validCities);
         }
-    
-        // Store city suggestions
-        setSuggestions(data);
     };
-
+    
+    // arrow function that fetches the weather data for the location based on latitude and longitude
     const fetchWeather = async (lat,lon) => {
-        const response2 = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
-        if (!response2.ok) {
-            console.error('Error fetching data:', response2.status, response2.statusText);
-            return;
+        try {
+            const response2 = await fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}`);
+            if (!response2.ok) {
+                throw new Error("failed to fetch weather data")
+            }
+            const data2 = await response2.json();
+            setWeather(data2);
+        } catch (error) {
+            console.error("Error fetching weather:", error);
         }
-        const data2 = await response2.json();
-        setWeather(data2);
     }
-
-
-
+    
+    // every time a user enters something, fetchCities() should execute
     useEffect(() => {
         fetchCities();
     }, [city, state, country]);
+    
+    // if a city is selected then fetchWeather should execute
+    useEffect(() => {
+        if (selectCity) {
+            fetchWeather(selectCity.lat, selectCity.lon);
+        }
+    }, [selectCity]);
 
     console.log(suggestions);
 
@@ -68,10 +97,8 @@ const LocationWeather = () => {
     const handleSelectCity = async (city) => {
         setSelectCity(city);
         setCity(city.name);
-        setState(city.state || '');
-        setCountry(city.country);
-        setSuggestions([]);
-        await fetchWeather(city.lat, city.lon);
+        setTimeout(() => setSuggestions([]), 100);
+        // await fetchWeather(city.lat, city.lon);
         
     };
     console.log("Rendering LocationSearch component");
@@ -100,13 +127,13 @@ const LocationWeather = () => {
             {suggestions.length > 0 && (
                 <ul>
                     {suggestions.map((city, index) => (
-                        <li key={`${city.name}-${city.state || "unknown"}${city.country}-${index}`} onClick={() => handleSelectCity(city)} className="p-2 bg-pink-100 hover:bg-pink-200 rounded-xl shadow-md cursor-pointer transition-all">
-                            {city.name}, {city.state ? city.state :  ''},  {city.country}
+                        <li key={`${city.name}-${city.state || "unknown"}${city.country}-${index}`} onClick={() => handleSelectCity(city)} className="flex items-center gap-2 p-2 border rounded-lg hover:bg-gray-200 cursor-pointer">
+                             <span>📍{city.name}, {city.state ? city.state :  ''},  {city.country}</span>
                         </li>
                     ))}
                 </ul>
             )}
-            {suggestions.length === 0 && <p>No suggestions found.</p>}
+            {suggestions.length === 0 && !selectCity && <p>No suggestions found.</p>}
             
             {/* displays the selected city choice in bold */}
             {selectCity && (
@@ -114,7 +141,7 @@ const LocationWeather = () => {
                     <h3>Selected City: {selectCity.name}, {selectCity.state || ''}, {selectCity.country}</h3>
                 </div>
             )}
-            {weather && (
+            {weather && selectCity && (
                 <div>
                     <h3>Weather Information:</h3>
                     <p>Temperature: {Math.round(((weather.main.temp - 273.15) * (9/5) + 32) * 100) / 100}°F</p>
