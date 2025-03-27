@@ -100,7 +100,7 @@ const LocationWeather = () => {
             {suggestions.length > 0 && (
                 <ul>
                     {suggestions.map((city, index) => (
-                        <li key={`${city.name}-${city.state || "unknown"}${city.country}-${index}`} onClick={() => handleSelectCity(city)}>
+                        <li key={`${city.name}-${city.state || "unknown"}${city.country}-${index}`} onClick={() => handleSelectCity(city)} className="p-2 bg-pink-100 hover:bg-pink-200 rounded-xl shadow-md cursor-pointer transition-all">
                             {city.name}, {city.state ? city.state :  ''},  {city.country}
                         </li>
                     ))}
@@ -121,6 +121,7 @@ const LocationWeather = () => {
                     <p>Weather: {weather.weather[0].description}</p>
                     <p>Humidity: {weather.main.humidity}%</p>
                     <p>Wind Speed: {weather.wind.speed} m/s</p>
+                    {/* I'm thinkin use the weather name I think as the main UI change and then the description can be used to add "accent" UI like maybe gray clouds for overcast cloudt */}
                 </div>
             )}
         </div>
